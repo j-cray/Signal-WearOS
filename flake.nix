@@ -45,6 +45,9 @@
           # Rust (with targets)
           rust-toolchain
 
+          # Scripting
+          python3
+
           # Android
           android-sdk
 
@@ -63,8 +66,7 @@
           echo "Android SDK: $ANDROID_HOME"
           echo "Android NDK: $ANDROID_NDK_ROOT"
           echo "Rust Version: $(rustc --version)"
-          echo "Targets installed:"
-          rustc --print target-list | grep android
+          echo "Python Version: $(python3 --version)"
         '';
       };
     };
