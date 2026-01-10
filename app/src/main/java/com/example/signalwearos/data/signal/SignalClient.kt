@@ -11,11 +11,15 @@ import okhttp3.WebSocketListener
 import okio.ByteString
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
+import org.signal.libsignal.protocol.ecc.Curve
+import org.signal.libsignal.protocol.ecc.ECPublicKey
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord
 import org.signal.libsignal.protocol.util.KeyHelper
-import org.signal.libsignal.protocol.ecc.Curve
 import java.util.UUID
+import javax.crypto.Cipher
+import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.spec.SecretKeySpec
 
 class SignalClient {
     private val client = OkHttpClient()
@@ -73,7 +77,10 @@ class SignalClient {
                 try {
                     val message = ProvisioningMessage.parseFrom(bytes.toByteArray())
                     Log.d("SignalClient", "Parsed Provisioning Message: $message")
-                    // Handle the provisioning flow here
+                    
+                    if (message.publicKey != null && message.body != null) {
+                        handleProvisioningMessage(message)
+                    }
                 } catch (e: Exception) {
                     Log.e("SignalClient", "Failed to parse message", e)
                 }
@@ -91,5 +98,30 @@ class SignalClient {
                 Log.e("SignalClient", "WebSocket Failure", t)
             }
         })
+    }
+    
+    private fun handleProvisioningMessage(message: ProvisioningMessage) {
+        try {
+            // 1. Decode the phone's ephemeral public key
+            val theirPublicKey = Curve.decodePoint(message.publicKey, 0)
+            
+            // 2. Perform ECDH to get the shared secret
+            val sharedSecret = Curve.calculateAgreement(theirPublicKey, identityKeyPair.privateKey)
+            
+            // 3. Derive the AES key (simplified for this example)
+            // In the real protocol, HKDF is used to derive keys from the shared secret.
+            // For this mock implementation, we'll assume a direct mapping or simple hash.
+            // val derivedKeys = HKDF.deriveSecrets(sharedSecret, ...) 
+            
+            // 4. Decrypt the body (AES-GCM)
+            // val cipher = Cipher.getInstance("AES/GCM/NoPadding")
+            // cipher.init(Cipher.DECRYPT_MODE, secretKey, iv)
+            // val decryptedBody = cipher.doFinal(message.body)
+            
+            Log.d("SignalClient", "Provisioning Message Received. Shared Secret Calculated.")
+            
+        } catch (e: Exception) {
+            Log.e("SignalClient", "Decryption failed", e)
+        }
     }
 }

@@ -1,6 +1,5 @@
 package com.example.signalwearos.data.signal.proto
 
-import android.util.Base64
 import java.io.ByteArrayInputStream
 import java.io.IOException
 import java.io.InputStream
@@ -8,24 +7,23 @@ import java.io.InputStream
 /**
  * A manual implementation of the Provisioning Message structure.
  * 
- * Based on typical Signal Protobuf structure:
  * message ProvisioningMessage {
  *   optional string uuid = 1;
- *   optional bytes publicKey = 2;
- *   optional string body = 3;
+ *   optional bytes publicKey = 2; // The phone's ephemeral public key
+ *   optional bytes body = 3;      // The encrypted payload
  * }
  */
 data class ProvisioningMessage(
     val uuid: String? = null,
     val publicKey: ByteArray? = null,
-    val body: String? = null
+    val body: ByteArray? = null
 ) {
     companion object {
         fun parseFrom(data: ByteArray): ProvisioningMessage {
             val input = ByteArrayInputStream(data)
             var uuid: String? = null
             var publicKey: ByteArray? = null
-            var body: String? = null
+            var body: ByteArray? = null
 
             while (true) {
                 val tag = readVarint32(input)
@@ -43,9 +41,9 @@ data class ProvisioningMessage(
                         if (wireType != 2) skipField(input, wireType)
                         else publicKey = readBytes(input)
                     }
-                    3 -> { // body (string)
+                    3 -> { // body (bytes)
                         if (wireType != 2) skipField(input, wireType)
-                        else body = readString(input)
+                        else body = readBytes(input)
                     }
                     else -> skipField(input, wireType)
                 }
@@ -130,7 +128,10 @@ data class ProvisioningMessage(
             if (other.publicKey == null) return false
             if (!publicKey.contentEquals(other.publicKey)) return false
         } else if (other.publicKey != null) return false
-        if (body != other.body) return false
+        if (body != null) {
+            if (other.body == null) return false
+            if (!body.contentEquals(other.body)) return false
+        } else if (other.body != null) return false
 
         return true
     }
@@ -138,7 +139,7 @@ data class ProvisioningMessage(
     override fun hashCode(): Int {
         var result = uuid?.hashCode() ?: 0
         result = 31 * result + (publicKey?.contentHashCode() ?: 0)
-        result = 31 * result + (body?.hashCode() ?: 0)
+        result = 31 * result + (body?.contentHashCode() ?: 0)
         return result
     }
 }
