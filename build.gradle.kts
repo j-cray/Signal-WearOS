@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
 }
 
-tasks.register<Exec>("setupGit") {
+tasks.register<Exec>("gitCommitAndPush") {
     workingDir = layout.projectDirectory.asFile
-    commandLine("sh", "-c", "git init && git add . && git commit -m 'Initial commit' && git branch -M main")
+    commandLine("sh", "-c", "git add . && git commit -m 'Auto-commit: Update Signal WearOS app' && git push origin main")
     isIgnoreExitValue = true
 }

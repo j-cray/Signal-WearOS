@@ -13,6 +13,10 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.wear.compose.material.MaterialTheme
@@ -24,6 +28,7 @@ import com.example.signalwearos.presentation.model.Contact
 import com.example.signalwearos.presentation.theme.SignalWearOSTheme
 import com.example.signalwearos.presentation.ui.ChatScreen
 import com.example.signalwearos.presentation.ui.ContactListScreen
+import com.example.signalwearos.presentation.ui.QrCodeScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,6 +49,12 @@ fun WearApp() {
     SignalWearOSTheme {
         val navController = rememberSwipeDismissableNavController()
         
+        // State to track if the device is linked. 
+        // In a real app, this would be persisted in DataStore or SharedPreferences.
+        var isDeviceLinked by remember { mutableStateOf(false) }
+        
+        val startDestination = if (isDeviceLinked) "contact_list" else "qr_code"
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -52,8 +63,18 @@ fun WearApp() {
         ) {
             SwipeDismissableNavHost(
                 navController = navController,
-                startDestination = "contact_list"
+                startDestination = startDestination
             ) {
+                composable("qr_code") {
+                    QrCodeScreen(
+                        onLinked = {
+                            isDeviceLinked = true
+                            navController.navigate("contact_list") {
+                                popUpTo("qr_code") { inclusive = true }
+                            }
+                        }
+                    )
+                }
                 composable("contact_list") {
                     // Mock data for demonstration
                     val contacts = listOf(
