@@ -1,7 +1,10 @@
+import com.google.protobuf.gradle.id
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -40,6 +43,7 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "1.8"
@@ -56,18 +60,16 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
-            // Exclude incompatible architectures from the AAR
             excludes += "lib/arm64-v8a/**"
             excludes += "lib/x86_64/**"
             excludes += "lib/x86/**"
-            
-            // Prioritize our local custom-built library
             pickFirsts += "lib/armeabi-v7a/libsignal_jni.so"
         }
     }
 }
 
 dependencies {
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(libs.play.services.wearable)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
@@ -87,7 +89,7 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
     
-    // Use the official Maven artifact for Java classes
+    // Use Maven dependency for Java classes (handles transitive deps)
     implementation(libs.libsignal.client)
 
     implementation(libs.okhttp)
@@ -104,4 +106,19 @@ dependencies {
     debugImplementation(libs.ui.tooling)
     debugImplementation(libs.ui.test.manifest)
     debugImplementation(libs.tiles.tooling)
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:3.25.1"
+    }
+    generateProtoTasks {
+        all().forEach { task ->
+            task.builtins {
+                id("java") {
+                    option("lite")
+                }
+            }
+        }
+    }
 }
