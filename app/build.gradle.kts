@@ -14,10 +14,9 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        multiDexEnabled = true
+        multiDexEnabled = false // Disabled to let R8 fit everything into one dex if possible
         
         ndk {
-            // Force 32-bit ABI for Wear OS compatibility and to avoid 64-bit loading issues
             abiFilters.add("armeabi-v7a")
         }
     }
@@ -66,7 +65,6 @@ dependencies {
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
     implementation("androidx.core:core-ktx:1.15.0")
-    // implementation("androidx.multidex:multidex:2.0.1")
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
