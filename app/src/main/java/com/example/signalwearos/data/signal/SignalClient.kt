@@ -1,12 +1,14 @@
 package com.example.signalwearos.data.signal
 
 import android.util.Log
+import com.example.signalwearos.data.signal.proto.ProvisioningMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
+import okio.ByteString
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.state.PreKeyRecord
@@ -66,9 +68,19 @@ class SignalClient {
                 Log.d("SignalClient", "WebSocket Connected")
             }
 
+            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
+                Log.d("SignalClient", "Received binary message: ${bytes.size} bytes")
+                try {
+                    val message = ProvisioningMessage.parseFrom(bytes.toByteArray())
+                    Log.d("SignalClient", "Parsed Provisioning Message: $message")
+                    // Handle the provisioning flow here
+                } catch (e: Exception) {
+                    Log.e("SignalClient", "Failed to parse message", e)
+                }
+            }
+
             override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("SignalClient", "Received message: $text")
-                // Handle provisioning message here
+                Log.d("SignalClient", "Received text message: $text")
             }
 
             override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
