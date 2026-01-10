@@ -25,7 +25,8 @@
         cmake-3-22-1
       ]);
 
-      rust-toolchain = pkgs.rust-bin.stable.latest.default.override {
+      # Use Nightly Rust for -Z flags
+      rust-toolchain = pkgs.rust-bin.nightly.latest.default.override {
         extensions = [ "rust-src" ];
         targets = [
           "armv7-linux-androideabi"
@@ -62,11 +63,10 @@
         JAVA_HOME = "${pkgs.jdk17}";
 
         shellHook = ''
-          echo "Signal WearOS Dev Environment Loaded"
+          echo "Signal WearOS Dev Environment Loaded (Rust Nightly)"
           echo "Android SDK: $ANDROID_HOME"
           echo "Android NDK: $ANDROID_NDK_ROOT"
           echo "Rust Version: $(rustc --version)"
-          echo "Python Version: $(python3 --version)"
         '';
       };
     };
