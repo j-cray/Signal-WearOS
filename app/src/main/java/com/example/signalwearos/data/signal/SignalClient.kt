@@ -16,6 +16,8 @@ import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SignalProtocolAddress
 import org.signal.libsignal.protocol.SessionCipher
 import org.signal.libsignal.protocol.ecc.Curve
+import org.signal.libsignal.protocol.ecc.ECPublicKey
+import org.signal.libsignal.protocol.kdf.HKDF
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord
 import org.signal.libsignal.protocol.util.KeyHelper
@@ -67,7 +69,16 @@ class SignalClient(context: Context) {
         // Start listening for the provisioning message
         connectToProvisioningSocket(uuid)
         
-        "tsdevice:/?uuid=$uuid&pub_key=${android.util.Base64.encodeToString(publicKey, android.util.Base64.NO_WRAP)}"
+        // Use Standard Base64 encoding (NO_WRAP) without padding if possible, 
+        // but standard usually works. Trying NO_WRAP | NO_PADDING.
+        val pubKeyBase64 = android.util.Base64.encodeToString(
+            publicKey, 
+            android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
+        )
+        
+        val uri = "tsdevice:/?uuid=$uuid&pub_key=$pubKeyBase64"
+        Log.d("SignalClient", "Generated Link URI: $uri")
+        uri
     }
 
     private fun connectToProvisioningSocket(uuid: String) {
