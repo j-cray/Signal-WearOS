@@ -55,8 +55,9 @@
           protobuf
           llvmPackages.libclang
 
-          # C Headers
+          # C Headers (64-bit and 32-bit)
           glibc.dev
+          pkgsi686Linux.glibc.dev
 
           # Android
           android-sdk
@@ -74,8 +75,8 @@
           # Set LIBCLANG_PATH for bindgen
           export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
 
-          # Set BINDGEN_EXTRA_CLANG_ARGS to find C headers
-          export BINDGEN_EXTRA_CLANG_ARGS="-I${pkgs.glibc.dev}/include -I${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.llvmPackages.libclang.version}/include"
+          # Set BINDGEN_EXTRA_CLANG_ARGS to find C headers (both 64-bit and 32-bit)
+          export BINDGEN_EXTRA_CLANG_ARGS="-I${pkgs.glibc.dev}/include -I${pkgs.pkgsi686Linux.glibc.dev}/include -I${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.llvmPackages.libclang.version}/include"
 
           unset ANDROID_SDK_ROOT
 
