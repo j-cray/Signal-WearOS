@@ -49,12 +49,13 @@
           # Scripting
           python3
 
-          # Android
-          android-sdk
-
           # Build Tools
+          cmake # Added CMake
           gradle
           protobuf
+
+          # Android
+          android-sdk
         ];
 
         # Environment variables
@@ -63,10 +64,11 @@
         JAVA_HOME = "${pkgs.jdk17}";
 
         shellHook = ''
-          echo "Signal WearOS Dev Environment Loaded (Rust Nightly)"
+          echo "Signal WearOS Dev Environment Loaded (Rust Nightly + CMake)"
           echo "Android SDK: $ANDROID_HOME"
           echo "Android NDK: $ANDROID_NDK_ROOT"
           echo "Rust Version: $(rustc --version)"
+          echo "CMake Version: $(cmake --version)"
         '';
       };
     };
