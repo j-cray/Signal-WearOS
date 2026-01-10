@@ -28,7 +28,7 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.input.RemoteInputIntentHelper
 import androidx.wear.input.wearableExtender
-import com.example.signalwearos.data.signal.SignalClient
+// import com.example.signalwearos.data.signal.SignalClient
 import com.example.signalwearos.presentation.model.Message
 import kotlinx.coroutines.launch
 
@@ -36,7 +36,7 @@ import kotlinx.coroutines.launch
 fun ChatScreen(contactId: String) {
     val scope = rememberCoroutineScope()
     // In a real app, this should be injected or retrieved from a ViewModel
-    val signalClient = remember { SignalClient() }
+    // val signalClient = remember { SignalClient() }
 
     // Mock messages
     val messages = remember {
@@ -60,7 +60,7 @@ fun ChatScreen(contactId: String) {
                 
                 // 2. Send via Signal Protocol
                 scope.launch {
-                    signalClient.sendMessage(contactId, text)
+                    // signalClient.sendMessage(contactId, text)
                 }
             }
         }

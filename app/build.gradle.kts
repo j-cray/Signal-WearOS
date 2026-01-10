@@ -14,7 +14,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        multiDexEnabled = false // Disabled to let R8 fit everything into one dex if possible
+        multiDexEnabled = true
         
         ndk {
             abiFilters.add("armeabi-v7a")
@@ -23,16 +23,16 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
         debug {
-            isMinifyEnabled = true
-            isShrinkResources = true
+            isMinifyEnabled = false // Disabled to rule out R8 issues
+            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -73,7 +73,7 @@ dependencies {
     implementation(libs.watchface.complications.data.source.ktx)
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
-    implementation(libs.libsignal.client)
+    // implementation(libs.libsignal.client) // REMOVED
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.protobuf.java)

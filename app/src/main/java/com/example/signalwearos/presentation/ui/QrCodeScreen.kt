@@ -18,7 +18,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
-import com.example.signalwearos.data.signal.SignalClient
+// import com.example.signalwearos.data.signal.SignalClient
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.MultiFormatWriter
 import com.google.zxing.common.BitMatrix
@@ -29,11 +29,12 @@ import kotlinx.coroutines.withContext
 fun QrCodeScreen(
     onLinked: () -> Unit
 ) {
-    val signalClient = remember { SignalClient() }
+    // val signalClient = remember { SignalClient() }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(Unit) {
-        val linkUri = signalClient.generateLinkUri()
+        // val linkUri = signalClient.generateLinkUri()
+        val linkUri = "tsdevice:/?uuid=mock-uuid&pub_key=mock-public-key"
         qrBitmap = generateQrCode(linkUri)
         
         // In a real implementation, we would start listening on the WebSocket here
