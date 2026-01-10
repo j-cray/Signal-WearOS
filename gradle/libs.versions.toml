@@ -17,6 +17,8 @@ horologistTiles = "0.6.17"
 watchfaceComplicationsDataSourceKtx = "1.2.1"
 composeNavigation = "1.5.6"
 zxing = "3.5.4"
+libsignal = "0.22.0"
+okhttp = "4.12.0"
 
 [libraries]
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
@@ -41,6 +43,8 @@ horologist-tiles = { group = "com.google.android.horologist", name = "horologist
 watchface-complications-data-source-ktx = { group = "androidx.wear.watchface", name = "watchface-complications-data-source-ktx", version.ref = "watchfaceComplicationsDataSourceKtx" }
 compose-navigation = { group = "androidx.wear.compose", name = "compose-navigation", version.ref = "composeNavigation" }
 zxing-core = { group = "com.google.zxing", name = "core", version.ref = "zxing" }
+libsignal-client = { group = "org.signal", name = "libsignal-client", version.ref = "libsignal" }
+okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

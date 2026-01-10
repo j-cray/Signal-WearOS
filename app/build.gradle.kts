@@ -37,6 +37,11 @@ android {
     buildFeatures {
         compose = true
     }
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
@@ -58,6 +63,8 @@ dependencies {
     implementation(libs.watchface.complications.data.source.ktx)
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
+    implementation(libs.libsignal.client)
+    implementation(libs.okhttp)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)

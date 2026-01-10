@@ -6,6 +6,6 @@ plugins {
 
 tasks.register<Exec>("gitCommitAndPush") {
     workingDir = layout.projectDirectory.asFile
-    commandLine("sh", "-c", "git add . && git commit -m 'Auto-commit: Update Signal WearOS app' && git push origin main")
+    commandLine("sh", "-c", "git add . && git commit -m 'Implement Signal Protocol key generation and WebSocket connection' && git push origin main")
     isIgnoreExitValue = true
 }
