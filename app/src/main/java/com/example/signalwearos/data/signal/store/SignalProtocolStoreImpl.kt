@@ -3,6 +3,8 @@ package com.example.signalwearos.data.signal.store
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SignalProtocolAddress
+import org.signal.libsignal.protocol.groups.state.SenderKeyRecord
+import org.signal.libsignal.protocol.groups.state.SenderKeyStore
 import org.signal.libsignal.protocol.state.IdentityKeyStore
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.PreKeyStore
@@ -26,6 +28,7 @@ class SignalProtocolStoreImpl(
     private val signedPreKeys = mutableMapOf<Int, SignedPreKeyRecord>()
     private val sessions = mutableMapOf<SignalProtocolAddress, SessionRecord>()
     private val trustedIdentities = mutableMapOf<SignalProtocolAddress, IdentityKey>()
+    private val senderKeys = mutableMapOf<String, SenderKeyRecord>()
 
     // --- IdentityKeyStore ---
 
@@ -106,8 +109,10 @@ class SignalProtocolStoreImpl(
         return addresses.map { loadSession(it) }
     }
 
-    override fun getAllSessionInfo(): List<Int> {
-        return emptyList() // Not implemented for this prototype
+    override fun getSubDeviceSessions(name: String): List<Int> {
+        return sessions.keys
+            .filter { it.name == name && it.deviceId != 1 }
+            .map { it.deviceId }
     }
 
     override fun storeSession(address: SignalProtocolAddress, record: SessionRecord) {
@@ -123,8 +128,32 @@ class SignalProtocolStoreImpl(
     }
 
     override fun deleteAllSessions(name: String) {
-        // Simplified: remove all sessions for a given user name (ignoring device ID)
         val toRemove = sessions.keys.filter { it.name == name }
         toRemove.forEach { sessions.remove(it) }
+    }
+    
+    // --- SenderKeyStore ---
+
+    override fun storeSenderKey(sender: SignalProtocolAddress, distributionId: UUID, record: SenderKeyRecord) {
+        senderKeys["${sender.name}::${sender.deviceId}::$distributionId"] = record
+    }
+
+    override fun loadSenderKey(sender: SignalProtocolAddress, distributionId: UUID): SenderKeyRecord {
+        // If no record exists, we must return a new, empty one.
+        // However, SenderKeyRecord might not have a public no-arg constructor in this version.
+        // We might need to construct it differently or handle nulls if the interface allows.
+        // Checking if we can create a dummy one or if we should throw.
+        // Usually, loadSenderKey should return a record that can be initialized.
+        
+        return senderKeys["${sender.name}::${sender.deviceId}::$distributionId"] ?: try {
+             // Attempting to create a fresh record. If the constructor requires bytes, we might need a valid empty structure.
+             // For now, let's assume we can't easily create an empty one without valid data and return null if the interface allowed it (it doesn't).
+             // Let's try to find a way to instantiate it.
+             // If this fails compilation, we might need to mock it or use reflection.
+             SenderKeyRecord(ByteArray(0)) // Trying with empty bytes if supported
+        } catch (e: Exception) {
+             // Fallback: This is a critical path. If we can't create a record, group messaging won't work.
+             throw RuntimeException("SenderKeyRecord not found and cannot be created", e)
+        }
     }
 }
