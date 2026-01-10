@@ -22,7 +22,7 @@
       ]);
 
       # Create an FHS environment (simulates standard Linux paths)
-      fhs = pkgs.buildFHSUserEnv {
+      fhs = pkgs.buildFHSEnv {
         name = "signal-build-env";
         targetPkgs = pkgs: with pkgs; [
           # Build Essentials
