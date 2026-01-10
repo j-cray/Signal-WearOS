@@ -44,7 +44,7 @@ android {
     kotlinOptions {
         jvmTarget = "1.8"
     }
-    // useLibrary("wear-sdk") // Removed to fix build error
+    // useLibrary("wear-sdk")
     buildFeatures {
         compose = true
     }
@@ -68,7 +68,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
-    implementation(libs.core.splashscreen)
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
@@ -77,7 +77,10 @@ dependencies {
     implementation(libs.watchface.complications.data.source.ktx)
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
-    // implementation(libs.libsignal.client)
+
+    // Manual LibSignal Integration
+    implementation(files("libs/libsignal-client.jar"))
+
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.protobuf.java)
@@ -86,7 +89,7 @@ dependencies {
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
     implementation(libs.androidx.core.ktx)
-    compileOnly("com.google.android.wearable:wearable:2.9.0") // Explicitly add wearable library
+    compileOnly("com.google.android.wearable:wearable:2.9.0")
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
