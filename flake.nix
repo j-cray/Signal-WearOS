@@ -53,6 +53,7 @@
           cmake
           gradle
           protobuf
+          llvmPackages.libclang # Added libclang
 
           # Android
           android-sdk
@@ -66,6 +67,9 @@
           # Define a local writable SDK directory
           export LOCAL_SDK_DIR="$PWD/.android-sdk"
           export ANDROID_HOME="$LOCAL_SDK_DIR"
+
+          # Set LIBCLANG_PATH for bindgen
+          export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
 
           unset ANDROID_SDK_ROOT
 
@@ -93,6 +97,13 @@
              echo "Fake NDK created."
           fi
 
+          # Create licenses if missing
+          mkdir -p "$LOCAL_SDK_DIR/licenses"
+          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$LOCAL_SDK_DIR/licenses/android-sdk-preview-license"
+
           # Create local.properties for libsignal
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           echo "ndk.dir=$FAKE_NDK_DIR" >> local.properties
@@ -105,6 +116,8 @@
           echo "Signal WearOS Dev Environment Ready!"
           echo "Android SDK: $ANDROID_HOME"
           echo "Rust Version: $(rustc --version)"
+          echo "CMake Version: $(cmake --version)"
+          echo "LibClang Path: $LIBCLANG_PATH"
         '';
       };
     };
