@@ -14,7 +14,7 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-
+        multiDexEnabled = true
     }
 
     buildTypes {
@@ -30,7 +30,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    // useLibrary("wear-sdk") // Removed as it is causing build failure with AGP 8.7
+    useLibrary("wear-sdk")
     buildFeatures {
         compose = true
     }
@@ -51,7 +51,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
-    implementation("androidx.core:core-ktx:1.15.0") // Downgrade core-ktx to match compileSdk 35
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
@@ -68,7 +68,6 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
-    compileOnly("com.google.android.wearable:wearable:2.9.0") // Explicitly add wearable library instead of useLibrary
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
