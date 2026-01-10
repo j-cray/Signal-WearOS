@@ -82,7 +82,8 @@ class SignalClient(context: Context) {
             android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
         )
         
-        val uri = "tsdevice:/?uuid=$uuid&pub_key=$pubKeyBase64"
+        // Correct Scheme: sgnl://linkdevice
+        val uri = "sgnl://linkdevice?uuid=$uuid&pub_key=$pubKeyBase64"
         Log.d("SignalClient", "Generated Link URI: $uri")
         uri
     }
