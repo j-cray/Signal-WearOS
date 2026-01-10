@@ -4,8 +4,8 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
 }
 
-tasks.register<Exec>("gitCommitAndPush") {
+tasks.register<Exec>("gitCommit") {
     workingDir = layout.projectDirectory.asFile
-    commandLine("sh", "-c", "git add . && git commit -m 'Implement Signal Protocol key generation and WebSocket connection' && git push origin main")
+    commandLine("sh", "-c", "git add . && git commit -m 'Implement Signal Protocol key generation and WebSocket connection'")
     isIgnoreExitValue = true
 }
