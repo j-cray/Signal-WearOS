@@ -51,7 +51,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
-    implementation(libs.core.splashscreen)
+    implementation("androidx.core:core-ktx:1.15.0") // Downgrade core-ktx to match compileSdk 35
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
