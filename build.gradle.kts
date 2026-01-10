@@ -6,6 +6,6 @@ plugins {
 
 tasks.register<Exec>("gitCommit") {
     workingDir = layout.projectDirectory.asFile
-    commandLine("sh", "-c", "git add . && git commit -m 'Implement Signal Protocol key generation and WebSocket connection'")
+    commandLine("sh", "-c", "git add . && git commit -m 'Implement DataStore for persisting linked state'")
     isIgnoreExitValue = true
 }

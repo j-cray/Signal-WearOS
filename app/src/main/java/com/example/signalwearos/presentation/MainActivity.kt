@@ -13,22 +13,24 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.TimeText
 import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
+import com.example.signalwearos.data.UserPreferencesRepository
 import com.example.signalwearos.presentation.model.Contact
 import com.example.signalwearos.presentation.theme.SignalWearOSTheme
 import com.example.signalwearos.presentation.ui.ChatScreen
 import com.example.signalwearos.presentation.ui.ContactListScreen
 import com.example.signalwearos.presentation.ui.QrCodeScreen
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -47,11 +49,17 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun WearApp() {
     SignalWearOSTheme {
+        val context = LocalContext.current
+        val userPreferencesRepository = UserPreferencesRepository(context)
+        val isDeviceLinked by userPreferencesRepository.isDeviceLinked.collectAsState(initial = false)
+        val scope = rememberCoroutineScope()
+        
         val navController = rememberSwipeDismissableNavController()
         
-        // State to track if the device is linked. 
-        // In a real app, this would be persisted in DataStore or SharedPreferences.
-        var isDeviceLinked by remember { mutableStateOf(false) }
+        // Wait for the initial state to be loaded before deciding the start destination
+        // In a real app, you might want to show a splash screen or loading indicator here
+        // For now, we'll default to qr_code if not linked, but this might cause a flicker if it loads true quickly.
+        // A better approach is to have a "Loading" state.
         
         val startDestination = if (isDeviceLinked) "contact_list" else "qr_code"
 
@@ -68,7 +76,9 @@ fun WearApp() {
                 composable("qr_code") {
                     QrCodeScreen(
                         onLinked = {
-                            isDeviceLinked = true
+                            scope.launch {
+                                userPreferencesRepository.setDeviceLinked(true)
+                            }
                             navController.navigate("contact_list") {
                                 popUpTo("qr_code") { inclusive = true }
                             }

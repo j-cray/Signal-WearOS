@@ -65,6 +65,7 @@ dependencies {
     implementation(libs.zxing.core)
     implementation(libs.libsignal.client)
     implementation(libs.okhttp)
+    implementation(libs.androidx.datastore.preferences)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
