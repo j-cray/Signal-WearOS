@@ -66,6 +66,8 @@ dependencies {
     implementation(libs.libsignal.client)
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
+    implementation(libs.protobuf.java)
+    implementation(libs.wear.input)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)

@@ -22,6 +22,7 @@ okhttp = "4.12.0"
 datastore = "1.1.1"
 protobuf = "4.33.3"
 protobufPlugin = "0.9.6"
+wearInput = "1.2.0"
 
 [libraries]
 play-services-wearable = { group = "com.google.android.gms", name = "play-services-wearable", version.ref = "playServicesWearable" }
@@ -50,6 +51,7 @@ libsignal-client = { group = "org.signal", name = "libsignal-client", version.re
 okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
 androidx-datastore-preferences = { group = "androidx.datastore", name = "datastore-preferences", version.ref = "datastore" }
 protobuf-java = { group = "com.google.protobuf", name = "protobuf-java", version.ref = "protobuf" }
+wear-input = { group = "androidx.wear", name = "wear-input", version.ref = "wearInput" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

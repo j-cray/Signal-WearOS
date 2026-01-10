@@ -5,14 +5,21 @@
 
 package com.example.signalwearos.presentation
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -25,11 +32,13 @@ import androidx.wear.compose.navigation.SwipeDismissableNavHost
 import androidx.wear.compose.navigation.composable
 import androidx.wear.compose.navigation.rememberSwipeDismissableNavController
 import com.example.signalwearos.data.UserPreferencesRepository
+import com.example.signalwearos.notification.NotificationHelper
 import com.example.signalwearos.presentation.model.Contact
 import com.example.signalwearos.presentation.theme.SignalWearOSTheme
 import com.example.signalwearos.presentation.ui.ChatScreen
 import com.example.signalwearos.presentation.ui.ContactListScreen
 import com.example.signalwearos.presentation.ui.QrCodeScreen
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -56,10 +65,30 @@ fun WearApp() {
         
         val navController = rememberSwipeDismissableNavController()
         
-        // Wait for the initial state to be loaded before deciding the start destination
-        // In a real app, you might want to show a splash screen or loading indicator here
-        // For now, we'll default to qr_code if not linked, but this might cause a flicker if it loads true quickly.
-        // A better approach is to have a "Loading" state.
+        // Permission handling for Notifications
+        val launcher = rememberLauncherForActivityResult(
+            ActivityResultContracts.RequestPermission()
+        ) { isGranted: Boolean ->
+            if (isGranted) {
+                // Permission Granted
+            }
+        }
+
+        LaunchedEffect(Unit) {
+            if (Build.VERSION.SDK_INT >= 33) {
+                if (ContextCompat.checkSelfPermission(
+                        context,
+                        Manifest.permission.POST_NOTIFICATIONS
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    launcher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            }
+            
+            // Simulate receiving a notification after 10 seconds for demo purposes
+            delay(10000)
+            NotificationHelper(context).showNotification("Alice", "Hey, are you there?")
+        }
         
         val startDestination = if (isDeviceLinked) "contact_list" else "qr_code"
 
