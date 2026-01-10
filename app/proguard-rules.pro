@@ -1,21 +1,21 @@
 # Add project specific ProGuard rules here.
-# You can control the set of applied configuration files using the
-# proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
+# By default, the flags in this file are appended to flags specified
+# in /home/icarus/Android/Sdk/tools/proguard/proguard-android-optimize.txt
+# You can edit the include path and order by changing the proguardFiles
+# directive in build.gradle.
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Keep our main entry points
+-keep class com.example.signalwearos.presentation.MainActivity { *; }
+-keep class com.example.signalwearos.SignalApplication { *; }
+-keep class com.example.signalwearos.complication.MainComplicationService { *; }
+-keep class com.example.signalwearos.tile.MainTileService { *; }
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# Keep Signal Client classes
+-keep class org.signal.libsignal.** { *; }
+-keep class com.example.signalwearos.data.signal.** { *; }
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
+# Keep Room entities and DAOs
+-keep class com.example.signalwearos.data.db.** { *; }
+
+# Keep Compose
+-keep class androidx.compose.** { *; }

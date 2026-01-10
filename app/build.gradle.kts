@@ -15,12 +15,20 @@ android {
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
-        multiDexKeepProguard = file("../multidex-config.pro")
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+        }
+        debug {
+            isMinifyEnabled = true // Enable R8 to shrink dex size
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -53,7 +61,7 @@ dependencies {
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
     implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.multidex:multidex:2.0.1")
+    // implementation("androidx.multidex:multidex:2.0.1")
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
