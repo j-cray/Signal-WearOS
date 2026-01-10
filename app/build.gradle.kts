@@ -14,25 +14,11 @@ android {
         targetSdk = 34
         versionCode = 1
         versionName = "1.0"
-        multiDexEnabled = true
-        
-        ndk {
-            abiFilters.add("armeabi-v7a")
-        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            isShrinkResources = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro"
-            )
-        }
-        debug {
-            isMinifyEnabled = false // Disabled to rule out R8 issues
-            isShrinkResources = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -64,7 +50,7 @@ dependencies {
     implementation(libs.compose.foundation)
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
-    implementation("androidx.core:core-ktx:1.15.0")
+    implementation(libs.core.splashscreen)
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
@@ -73,7 +59,7 @@ dependencies {
     implementation(libs.watchface.complications.data.source.ktx)
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
-    // implementation(libs.libsignal.client) // REMOVED
+    // implementation(libs.libsignal.client)
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.protobuf.java)
