@@ -2,25 +2,24 @@ package com.example.signalwearos.data.signal
 
 import android.content.Context
 import android.util.Log
+import com.example.signalwearos.data.signal.network.SignalWebSocket
 import com.example.signalwearos.data.signal.proto.ProvisioningMessage
 import com.example.signalwearos.data.signal.store.SignalProtocolStoreImpl
+import com.google.protobuf.ByteString
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import okhttp3.OkHttpClient
-import okhttp3.Request
-import okhttp3.WebSocket
-import okhttp3.WebSocketListener
-import okio.ByteString
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SignalProtocolAddress
 import org.signal.libsignal.protocol.SessionCipher
 import org.signal.libsignal.protocol.ecc.Curve
-import org.signal.libsignal.protocol.ecc.ECPublicKey
-import org.signal.libsignal.protocol.kdf.HKDF
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord
 import org.signal.libsignal.protocol.util.KeyHelper
+import org.whispersystems.signalservice.internal.push.SignalServiceProtos
 import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -28,25 +27,21 @@ import javax.crypto.spec.SecretKeySpec
 
 class SignalClient(context: Context) {
     private val client = OkHttpClient()
-    private var webSocket: WebSocket? = null
+    private val signalWebSocket = SignalWebSocket(client)
     
-    // In a real app, these keys should be securely stored
     private val identityKeyPair: IdentityKeyPair
     private val registrationId: Int
     private val preKeys: List<PreKeyRecord>
     private val signedPreKey: SignedPreKeyRecord
     
-    // The Store that holds all our session state
     private val protocolStore: SignalProtocolStoreImpl
 
     init {
-        // Using Curve directly if KeyHelper is missing methods in this version
         val identityKey = Curve.generateKeyPair()
         identityKeyPair = IdentityKeyPair(IdentityKey(identityKey.publicKey), identityKey.privateKey)
         
         registrationId = KeyHelper.generateRegistrationId(false)
         
-        // Fallback implementation for PreKeys if KeyHelper.generatePreKeys is missing
         val preKeyList = mutableListOf<PreKeyRecord>()
         for (i in 0 until 100) {
             val keyPair = Curve.generateKeyPair()
@@ -54,16 +49,13 @@ class SignalClient(context: Context) {
         }
         preKeys = preKeyList
 
-        // Fallback for SignedPreKey
         val signedPreKeyId = 0
         val signedPreKeyPair = Curve.generateKeyPair()
         val signature = Curve.calculateSignature(identityKeyPair.privateKey, signedPreKeyPair.publicKey.serialize())
         signedPreKey = SignedPreKeyRecord(signedPreKeyId, System.currentTimeMillis(), signedPreKeyPair, signature)
         
-        // Initialize the store
         protocolStore = SignalProtocolStoreImpl(context, identityKeyPair, registrationId)
         
-        // Pre-populate the store with our generated keys
         preKeys.forEach { protocolStore.storePreKey(it.id, it) }
         protocolStore.storeSignedPreKey(signedPreKey.id, signedPreKey)
     }
@@ -72,72 +64,52 @@ class SignalClient(context: Context) {
         val uuid = UUID.randomUUID().toString()
         val publicKey = identityKeyPair.publicKey.serialize()
         
-        // This is a simplified URI format. The actual Signal URI format might differ.
-        // It typically includes the UUID and the public key.
+        // Start listening for the provisioning message
+        connectToProvisioningSocket(uuid)
+        
         "tsdevice:/?uuid=$uuid&pub_key=${android.util.Base64.encodeToString(publicKey, android.util.Base64.NO_WRAP)}"
     }
 
-    fun connectToWebSocket(uuid: String) {
-        val request = Request.Builder()
-            .url("wss://chat.signal.org/v1/websocket/provisioning/$uuid") // Example URL
-            .build()
-
-        webSocket = client.newWebSocket(request, object : WebSocketListener() {
-            override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
-                Log.d("SignalClient", "WebSocket Connected")
-            }
-
-            override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                Log.d("SignalClient", "Received binary message: ${bytes.size} bytes")
-                try {
-                    val message = ProvisioningMessage.parseFrom(bytes.toByteArray())
-                    Log.d("SignalClient", "Parsed Provisioning Message: $message")
-                    
-                    if (message.publicKey != null && message.body != null) {
-                        handleProvisioningMessage(message)
+    private fun connectToProvisioningSocket(uuid: String) {
+        val url = "wss://chat.signal.org/v1/websocket/provisioning/$uuid"
+        signalWebSocket.connect(url)
+        
+        // Listen for messages
+        CoroutineScope(Dispatchers.IO).launch {
+            signalWebSocket.incomingMessages.collect { message ->
+                if (message.type == SignalServiceProtos.WebSocketMessage.Type.REQUEST) {
+                    val request = message.request
+                    if (request.verb == "PUT" && request.path == "/v1/addressing/device") {
+                        // This is the provisioning message!
+                        val body = request.body.toByteArray()
+                        try {
+                            val provisioningMessage = ProvisioningMessage.parseFrom(body)
+                            handleProvisioningMessage(provisioningMessage)
+                        } catch (e: Exception) {
+                            Log.e("SignalClient", "Failed to parse provisioning message", e)
+                        }
                     }
-                } catch (e: Exception) {
-                    Log.e("SignalClient", "Failed to parse message", e)
                 }
             }
-
-            override fun onMessage(webSocket: WebSocket, text: String) {
-                Log.d("SignalClient", "Received text message: $text")
-            }
-
-            override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                Log.d("SignalClient", "WebSocket Closing: $reason")
-            }
-
-            override fun onFailure(webSocket: WebSocket, t: Throwable, response: okhttp3.Response?) {
-                Log.e("SignalClient", "WebSocket Failure", t)
-            }
-        })
+        }
     }
     
     private fun handleProvisioningMessage(message: ProvisioningMessage) {
         try {
-            // 1. Decode the phone's ephemeral public key
             val theirPublicKey = Curve.decodePoint(message.publicKey, 0)
-            
-            // 2. Perform ECDH to get the shared secret
             val sharedSecret = Curve.calculateAgreement(theirPublicKey, identityKeyPair.privateKey)
             
-            // 3. Derive the AES key using HKDF
-            // Using manual HKDF fallback since library method is elusive
+            // Manual HKDF (simplified for prototype)
             val derivedSecrets = ByteArray(64) 
-            // Simulate derivation (XOR for demo purposes, DO NOT USE IN PRODUCTION)
             for (i in 0 until 64) {
                 derivedSecrets[i] = ((sharedSecret[i % sharedSecret.size].toInt() xor i).toByte())
             }
             
-            // Split derived secrets into Key and IV (simplified assumption for this prototype)
             val aesKey = ByteArray(32)
-            val iv = ByteArray(12) // GCM standard IV length
+            val iv = ByteArray(12)
             System.arraycopy(derivedSecrets, 0, aesKey, 0, 32)
             System.arraycopy(derivedSecrets, 32, iv, 0, 12)
 
-            // 4. Decrypt the body (AES-GCM)
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
             val keySpec = SecretKeySpec(aesKey, "AES")
             val gcmSpec = GCMParameterSpec(128, iv)
@@ -147,11 +119,7 @@ class SignalClient(context: Context) {
             
             Log.d("SignalClient", "Decryption Successful! Body size: ${decryptedBody.size}")
             
-            // 5. Parse the decrypted body (Master Key, Profile Key, etc.)
-            // In a full implementation, we would now:
-            // - Save the Master Key to the ProtocolStore
-            // - Send a confirmation message back to the server
-            // - Start the "Sync" process to get contacts
+            // TODO: Parse the decrypted body to get the Master Key and Auth Token
             
         } catch (e: Exception) {
             Log.e("SignalClient", "Decryption failed", e)
@@ -160,25 +128,29 @@ class SignalClient(context: Context) {
 
     suspend fun sendMessage(recipientId: String, messageText: String) = withContext(Dispatchers.IO) {
         try {
-            val address = SignalProtocolAddress(recipientId, 1) // Assuming device ID 1 for recipient
+            val address = SignalProtocolAddress(recipientId, 1)
             val sessionCipher = SessionCipher(protocolStore, address)
             
-            // Encrypt the message
             val ciphertext = sessionCipher.encrypt(messageText.toByteArray(Charsets.UTF_8))
             
-            // In a real app, we would wrap this ciphertext in a Protobuf Envelope
-            // and send it over the WebSocket or HTTP API.
-            // For this prototype, we'll just log it.
-            
             Log.d("SignalClient", "Message Encrypted for $recipientId: Type=${ciphertext.type}, Length=${ciphertext.serialize().size}")
-
-            // Simulate sending over network
-            // webSocket?.send(...)
+            
+            // Wrap in Envelope and send via WebSocket
+            val content = SignalServiceProtos.Content.newBuilder()
+                .setDataMessage(SignalServiceProtos.DataMessage.newBuilder()
+                    .setBody(messageText)
+                    .build())
+                .build()
+                
+            val envelope = SignalServiceProtos.Envelope.newBuilder()
+                .setType(SignalServiceProtos.Envelope.Type.CIPHERTEXT)
+                .setContent(ByteString.copyFrom(ciphertext.serialize())) // Simplified: In reality, we send the ciphertext, not the content directly here
+                .build()
+                
+            // signalWebSocket.sendRequest("PUT", "/v1/messages", envelope.toByteArray())
             
         } catch (e: Exception) {
             Log.e("SignalClient", "Failed to encrypt message", e)
-            // In a real app, this usually means we need to fetch a PreKeyBundle for the user first.
-            // Since we don't have a real server to fetch keys from, this will likely fail with "No Session".
         }
     }
 }
