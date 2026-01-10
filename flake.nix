@@ -59,8 +59,6 @@
         ];
 
         # Environment variables
-        # We set ANDROID_SDK_ROOT to the Nix store path for reference
-        # But we will override ANDROID_HOME in the shellHook
         ANDROID_NDK_ROOT = "${android-sdk}/share/android-sdk/ndk/26.1.10909125";
         JAVA_HOME = "${pkgs.jdk17}";
 
@@ -69,36 +67,44 @@
           export LOCAL_SDK_DIR="$PWD/.android-sdk"
           export ANDROID_HOME="$LOCAL_SDK_DIR"
 
-          # Unset the read-only one to avoid Gradle confusion
           unset ANDROID_SDK_ROOT
 
           echo "Setting up writable Android SDK in $LOCAL_SDK_DIR..."
 
-          # Create the directory structure
-          mkdir -p "$LOCAL_SDK_DIR/ndk"
+          # Target NDK version Gradle wants
+          TARGET_NDK_VER="28.0.13004108"
+          FAKE_NDK_DIR="$LOCAL_SDK_DIR/ndk/$TARGET_NDK_VER"
 
-          # Symlink the NDK to the version Gradle expects (28.0.13004108)
-          # We link it from the Nix store NDK (26.1.10909125)
-          if [ ! -d "$LOCAL_SDK_DIR/ndk/28.0.13004108" ]; then
-             ln -sfn "$ANDROID_NDK_ROOT" "$LOCAL_SDK_DIR/ndk/28.0.13004108"
-             echo "Symlinked NDK 26 as 28.0.13004108"
+          mkdir -p "$FAKE_NDK_DIR"
+
+          # Symlink everything from the real NDK except source.properties
+          if [ -z "$(ls -A $FAKE_NDK_DIR)" ]; then
+             echo "Creating fake NDK structure..."
+             for file in "$ANDROID_NDK_ROOT"/*; do
+               name=$(basename "$file")
+               if [ "$name" != "source.properties" ]; then
+                 ln -sfn "$file" "$FAKE_NDK_DIR/$name"
+               fi
+             done
+
+             # Create fake source.properties
+             echo "Pkg.Desc = Android NDK" > "$FAKE_NDK_DIR/source.properties"
+             echo "Pkg.Revision = $TARGET_NDK_VER" >> "$FAKE_NDK_DIR/source.properties"
+             echo "Fake NDK created."
           fi
 
           # Create local.properties for libsignal
-          # We assume the user might run this from root or libsignal/java
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ndk.dir=$ANDROID_HOME/ndk/28.0.13004108" >> local.properties
+          echo "ndk.dir=$FAKE_NDK_DIR" >> local.properties
 
-          # Also create it in libsignal/java if it exists
           if [ -d "libsignal/java" ]; then
              echo "sdk.dir=$ANDROID_HOME" > libsignal/java/local.properties
-             echo "ndk.dir=$ANDROID_HOME/ndk/28.0.13004108" >> libsignal/java/local.properties
+             echo "ndk.dir=$FAKE_NDK_DIR" >> libsignal/java/local.properties
           fi
 
           echo "Signal WearOS Dev Environment Ready!"
           echo "Android SDK: $ANDROID_HOME"
           echo "Rust Version: $(rustc --version)"
-          echo "CMake Version: $(cmake --version)"
         '';
       };
     };
