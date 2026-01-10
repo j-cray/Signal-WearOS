@@ -1,5 +1,6 @@
 package com.example.signalwearos.data.signal.store
 
+/*
 import android.content.Context
 import com.example.signalwearos.data.db.SignalDatabase
 import com.example.signalwearos.data.db.entity.IdentityKeyEntity
@@ -20,16 +21,18 @@ import org.signal.libsignal.protocol.state.SignalProtocolStore
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord
 import org.signal.libsignal.protocol.state.SignedPreKeyStore
 import java.util.UUID
+*/
 
 /**
  * A Room-backed implementation of the SignalProtocolStore.
  */
 class SignalProtocolStoreImpl(
-    context: Context,
-    private val identityKeyPair: IdentityKeyPair,
-    private val registrationId: Int
-) : SignalProtocolStore {
+    // context: Context,
+    // private val identityKeyPair: IdentityKeyPair,
+    // private val registrationId: Int
+) /* : SignalProtocolStore */ {
 
+    /*
     private val database = SignalDatabase.getDatabase(context)
     private val senderKeys = mutableMapOf<String, SenderKeyRecord>() // SenderKeys still in memory for now
 
@@ -58,9 +61,8 @@ class SignalProtocolStoreImpl(
     }
 
     override fun isTrustedIdentity(address: SignalProtocolAddress, identityKey: IdentityKey, direction: IdentityKeyStore.Direction): Boolean {
-        val addressString = "${address.name}::${address.deviceId}"
-        val existingEntity = database.identityKeyDao().getIdentityKey(addressString)
-        val trusted = existingEntity?.let { IdentityKey(it.identityKey, 0) }
+        // For simplicity, trust on first use (TOFU)
+        val trusted = getIdentity(address)
         return trusted == null || trusted == identityKey
     }
 
@@ -178,4 +180,5 @@ class SignalProtocolStoreImpl(
              throw RuntimeException("SenderKeyRecord not found and cannot be created", e)
         }
     }
+    */
 }
