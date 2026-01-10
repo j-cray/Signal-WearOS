@@ -1,0 +1,2 @@
+-keep class com.example.signalwearos.SignalApplication
+-keep class com.example.signalwearos.presentation.MainActivity

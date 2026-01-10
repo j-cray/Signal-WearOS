@@ -15,6 +15,7 @@ android {
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
+        multiDexKeepProguard = file("../multidex-config.pro")
     }
 
     buildTypes {
@@ -52,6 +53,7 @@ dependencies {
     implementation(libs.wear.tooling.preview)
     implementation(libs.activity.compose)
     implementation("androidx.core:core-ktx:1.15.0")
+    implementation("androidx.multidex:multidex:2.0.1")
     implementation(libs.tiles)
     implementation(libs.tiles.material)
     implementation(libs.tiles.tooling.preview)
