@@ -40,7 +40,6 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
-        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "1.8"
@@ -56,11 +55,19 @@ android {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
+        jniLibs {
+            // Exclude incompatible architectures from the AAR
+            excludes += "lib/arm64-v8a/**"
+            excludes += "lib/x86_64/**"
+            excludes += "lib/x86/**"
+            
+            // Prioritize our local custom-built library
+            pickFirsts += "lib/armeabi-v7a/libsignal_jni.so"
+        }
     }
 }
 
 dependencies {
-    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.5")
     implementation(libs.play.services.wearable)
     implementation(platform(libs.compose.bom))
     implementation(libs.ui)
@@ -80,8 +87,8 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
     
-    // Manual LibSignal Integration
-    implementation(files("libs/libsignal-client.jar"))
+    // Use the official Maven artifact for Java classes
+    implementation(libs.libsignal.client)
 
     implementation(libs.okhttp)
     implementation(libs.androidx.datastore.preferences)
