@@ -1,21 +1,17 @@
 {
-  description = "Signal WearOS Dev Environment with Rust and Android SDK";
+  description = "Signal WearOS FHS Dev Environment";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     android-nixpkgs.url = "github:tadfisher/android-nixpkgs";
-    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, android-nixpkgs, rust-overlay }:
+  outputs = { self, nixpkgs, android-nixpkgs }:
     let
       system = "x86_64-linux";
-      overlays = [ (import rust-overlay) ];
-      pkgs = import nixpkgs {
-        inherit system overlays;
-        config.allowUnfree = true;
-      };
+      pkgs = import nixpkgs { inherit system; config.allowUnfree = true; };
 
+      # Get Android SDK from Nix
       android-sdk = android-nixpkgs.sdk.${system} (sdkPkgs: with sdkPkgs; [
         cmdline-tools-latest
         build-tools-34-0-0
@@ -25,107 +21,101 @@
         cmake-3-22-1
       ]);
 
-      # Use Nightly Rust for -Z flags
-      rust-toolchain = pkgs.rust-bin.nightly.latest.default.override {
-        extensions = [ "rust-src" ];
-        targets = [
-          "armv7-linux-androideabi"
-          "aarch64-linux-android"
-          "i686-linux-android"
-          "x86_64-linux-android"
-        ];
-      };
-
-    in
-    {
-      devShells.${system}.default = pkgs.mkShell {
-        buildInputs = with pkgs; [
-          # Java
-          jdk17
-
-          # Rust (with targets)
-          rust-toolchain
-
-          # Scripting
-          python3
-
-          # Build Tools
+      # Create an FHS environment (simulates standard Linux paths)
+      fhs = pkgs.buildFHSUserEnv {
+        name = "signal-build-env";
+        targetPkgs = pkgs: with pkgs; [
+          # Build Essentials
+          git
+          curl
+          wget
+          gnumake
+          gcc
+          clang
+          llvmPackages.libclang
           cmake
+          pkg-config
+
+          # Libraries often needed by bindgen/cargo
+          zlib
+          ncurses
+          openssl
+          glibc.dev
+
+          # Java/Android
+          jdk17
           gradle
           protobuf
-          llvmPackages.libclang
+          python3
 
-          # C Headers (64-bit and 32-bit)
-          glibc.dev
-          pkgsi686Linux.glibc.dev
-
-          # Android
-          android-sdk
+          # Rust Manager
+          rustup
         ];
 
-        # Environment variables
-        ANDROID_NDK_ROOT = "${android-sdk}/share/android-sdk/ndk/26.1.10909125";
-        JAVA_HOME = "${pkgs.jdk17}";
+        # Expose the Android SDK from Nix store
+        profile = ''
+          export JAVA_HOME=${pkgs.jdk17}
 
-        shellHook = ''
-          # Define a local writable SDK directory
+          # Reference the read-only SDK
+          export NIX_ANDROID_SDK_ROOT=${android-sdk}/share/android-sdk
+
+          # Setup local writable SDK for Gradle
           export LOCAL_SDK_DIR="$PWD/.android-sdk"
           export ANDROID_HOME="$LOCAL_SDK_DIR"
 
-          # Set LIBCLANG_PATH for bindgen
-          export LIBCLANG_PATH="${pkgs.llvmPackages.libclang.lib}/lib"
-
-          # Set BINDGEN_EXTRA_CLANG_ARGS to find C headers (both 64-bit and 32-bit)
-          export BINDGEN_EXTRA_CLANG_ARGS="-I${pkgs.glibc.dev}/include -I${pkgs.pkgsi686Linux.glibc.dev}/include -I${pkgs.llvmPackages.libclang.lib}/lib/clang/${pkgs.llvmPackages.libclang.version}/include"
-
+          # Unset conflicting var
           unset ANDROID_SDK_ROOT
 
-          echo "Setting up writable Android SDK in $LOCAL_SDK_DIR..."
+          echo "Initializing Signal Build Environment..."
 
-          # Target NDK version Gradle wants
-          TARGET_NDK_VER="28.0.13004108"
-          FAKE_NDK_DIR="$LOCAL_SDK_DIR/ndk/$TARGET_NDK_VER"
+          # 1. Setup Writable SDK Structure
+          if [ ! -d "$LOCAL_SDK_DIR/ndk/28.0.13004108" ]; then
+            echo "-> Setting up NDK symlinks..."
+            mkdir -p "$LOCAL_SDK_DIR/ndk"
+            mkdir -p "$LOCAL_SDK_DIR/licenses"
 
-          mkdir -p "$FAKE_NDK_DIR"
+            # Symlink NDK 26 as 28 (Gradle deception)
+            ln -sfn "$NIX_ANDROID_SDK_ROOT/ndk/26.1.10909125" "$LOCAL_SDK_DIR/ndk/28.0.13004108"
 
-          # Symlink everything from the real NDK except source.properties
-          if [ -z "$(ls -A $FAKE_NDK_DIR)" ]; then
-             echo "Creating fake NDK structure..."
-             for file in "$ANDROID_NDK_ROOT"/*; do
-               name=$(basename "$file")
-               if [ "$name" != "source.properties" ]; then
-                 ln -sfn "$file" "$FAKE_NDK_DIR/$name"
-               fi
-             done
-
-             # Create fake source.properties
-             echo "Pkg.Desc = Android NDK" > "$FAKE_NDK_DIR/source.properties"
-             echo "Pkg.Revision = $TARGET_NDK_VER" >> "$FAKE_NDK_DIR/source.properties"
-             echo "Fake NDK created."
+            # Accept Licenses
+            echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+            echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+            echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
+            echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$LOCAL_SDK_DIR/licenses/android-sdk-preview-license"
           fi
 
-          # Create licenses if missing
-          mkdir -p "$LOCAL_SDK_DIR/licenses"
-          echo "8933bad161af4178b1185d1a37fbf41ea5269c55" > "$LOCAL_SDK_DIR/licenses/android-sdk-license"
-          echo "d56f5187479451eabf01fb78af6dfcb131a6481e" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
-          echo "24333f8a63b6825ea9c5514f83c2829b004d1fee" >> "$LOCAL_SDK_DIR/licenses/android-sdk-license"
-          echo "84831b9409646a918e30573bab4c9c91346d8abd" > "$LOCAL_SDK_DIR/licenses/android-sdk-preview-license"
+          # 2. Setup Rust via Rustup (Local installation)
+          export RUSTUP_HOME="$PWD/.rustup"
+          export CARGO_HOME="$PWD/.cargo"
+          export PATH="$CARGO_HOME/bin:$PATH"
 
-          # Create local.properties for libsignal
+          if ! command -v rustc &> /dev/null; then
+             echo "-> Installing Rust Nightly (required for libsignal)..."
+             rustup install nightly
+             rustup default nightly
+
+             echo "-> Adding Android Targets..."
+             rustup target add armv7-linux-androideabi aarch64-linux-android i686-linux-android x86_64-linux-android
+          fi
+
+          # 3. Setup Local Properties
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          echo "ndk.dir=$FAKE_NDK_DIR" >> local.properties
-
+          echo "ndk.dir=$ANDROID_HOME/ndk/28.0.13004108" >> local.properties
           if [ -d "libsignal/java" ]; then
              echo "sdk.dir=$ANDROID_HOME" > libsignal/java/local.properties
-             echo "ndk.dir=$FAKE_NDK_DIR" >> libsignal/java/local.properties
+             echo "ndk.dir=$ANDROID_HOME/ndk/28.0.13004108" >> libsignal/java/local.properties
           fi
 
-          echo "Signal WearOS Dev Environment Ready!"
-          echo "Android SDK: $ANDROID_HOME"
-          echo "Rust Version: $(rustc --version)"
-          echo "CMake Version: $(cmake --version)"
-          echo "LibClang Path: $LIBCLANG_PATH"
+          echo "=================================================="
+          echo "Environment Ready!"
+          echo "To build libsignal:"
+          echo "  cd libsignal/java"
+          echo "  ./gradlew bundleReleaseAar"
+          echo "=================================================="
         '';
       };
+    in
+    {
+      devShells.${system}.default = fhs.env;
     };
 }
