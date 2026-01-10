@@ -3,3 +3,9 @@ plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.compose) apply false
 }
+
+tasks.register<Exec>("gitCommit") {
+    workingDir = layout.projectDirectory.asFile
+    commandLine("sh", "-c", "git add . && git commit -m 'Implement manual Protobuf parsing for ProvisioningMessage'")
+    isIgnoreExitValue = true
+}
