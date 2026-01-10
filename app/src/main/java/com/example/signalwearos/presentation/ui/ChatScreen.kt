@@ -15,6 +15,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -27,10 +28,16 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 import androidx.wear.input.RemoteInputIntentHelper
 import androidx.wear.input.wearableExtender
+import com.example.signalwearos.data.signal.SignalClient
 import com.example.signalwearos.presentation.model.Message
+import kotlinx.coroutines.launch
 
 @Composable
 fun ChatScreen(contactId: String) {
+    val scope = rememberCoroutineScope()
+    // In a real app, this should be injected or retrieved from a ViewModel
+    val signalClient = remember { SignalClient() }
+
     // Mock messages
     val messages = remember {
         mutableStateListOf(
@@ -48,7 +55,13 @@ fun ChatScreen(contactId: String) {
             val results = RemoteInput.getResultsFromIntent(result.data)
             val text = results?.getCharSequence("reply_text")?.toString()
             if (text != null) {
+                // 1. Add to UI immediately
                 messages.add(Message("new", "me", text, "Now", false))
+                
+                // 2. Send via Signal Protocol
+                scope.launch {
+                    signalClient.sendMessage(contactId, text)
+                }
             }
         }
     }
