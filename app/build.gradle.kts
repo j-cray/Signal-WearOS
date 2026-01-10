@@ -1,21 +1,17 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
-    // alias(libs.plugins.ksp) // Disabled due to build error
+    alias(libs.plugins.ksp)
 }
 
 android {
     namespace = "com.example.signalwearos"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.signalwearos"
         minSdk = 30
-        targetSdk = 36
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
@@ -34,7 +30,7 @@ android {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
     }
-    useLibrary("wear-sdk")
+    // useLibrary("wear-sdk") // Removed as it might not be found in this environment with AGP 8.7
     buildFeatures {
         compose = true
     }
@@ -71,7 +67,7 @@ dependencies {
     implementation(libs.wear.input)
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
-    // ksp(libs.androidx.room.compiler)
+    ksp(libs.androidx.room.compiler)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
