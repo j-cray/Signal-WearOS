@@ -4,13 +4,15 @@
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     android-nixpkgs.url = "github:tadfisher/android-nixpkgs";
+    rust-overlay.url = "github:oxalica/rust-overlay";
   };
 
-  outputs = { self, nixpkgs, android-nixpkgs }:
+  outputs = { self, nixpkgs, android-nixpkgs, rust-overlay }:
     let
-      system = "x86_64-linux"; # Adjust if you are on aarch64-linux or darwin
+      system = "x86_64-linux";
+      overlays = [ (import rust-overlay) ];
       pkgs = import nixpkgs {
-        inherit system;
+        inherit system overlays;
         config.allowUnfree = true;
       };
 
@@ -19,9 +21,19 @@
         build-tools-34-0-0
         platform-tools
         platforms-android-34
-        ndk-26-1-10909125 # NDK version required by libsignal
+        ndk-26-1-10909125
         cmake-3-22-1
       ]);
+
+      rust-toolchain = pkgs.rust-bin.stable.latest.default.override {
+        extensions = [ "rust-src" ];
+        targets = [
+          "armv7-linux-androideabi"
+          "aarch64-linux-android"
+          "i686-linux-android"
+          "x86_64-linux-android"
+        ];
+      };
 
     in
     {
@@ -30,18 +42,15 @@
           # Java
           jdk17
 
-          # Rust
-          rustc
-          cargo
-          rustfmt
-          clippy
+          # Rust (with targets)
+          rust-toolchain
 
           # Android
           android-sdk
 
           # Build Tools
           gradle
-          protobuf # For compiling signal protos
+          protobuf
         ];
 
         # Environment variables
@@ -54,10 +63,8 @@
           echo "Android SDK: $ANDROID_HOME"
           echo "Android NDK: $ANDROID_NDK_ROOT"
           echo "Rust Version: $(rustc --version)"
-
-          # Add Android targets for Rust
-          rustup target add armv7-linux-androideabi || echo "Rustup not found, assuming nix managed rust"
-          rustup target add aarch64-linux-android || echo "Rustup not found, assuming nix managed rust"
+          echo "Targets installed:"
+          rustc --print target-list | grep android
         '';
       };
     };
