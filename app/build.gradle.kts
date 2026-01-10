@@ -1,6 +1,7 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    // alias(libs.plugins.ksp) // Disabled due to build error
 }
 
 android {
@@ -68,6 +69,9 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.protobuf.java)
     implementation(libs.wear.input)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    // ksp(libs.androidx.room.compiler)
     androidTestImplementation(platform(libs.compose.bom))
     androidTestImplementation(libs.ui.test.junit4)
     debugImplementation(libs.ui.tooling)
