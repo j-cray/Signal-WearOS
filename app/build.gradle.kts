@@ -15,6 +15,11 @@ android {
         versionCode = 1
         versionName = "1.0"
         multiDexEnabled = true
+        
+        ndk {
+            // Force 32-bit ABI for Wear OS compatibility and to avoid 64-bit loading issues
+            abiFilters.add("armeabi-v7a")
+        }
     }
 
     buildTypes {
@@ -27,7 +32,7 @@ android {
             )
         }
         debug {
-            isMinifyEnabled = true // Enable R8 to shrink dex size
+            isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
