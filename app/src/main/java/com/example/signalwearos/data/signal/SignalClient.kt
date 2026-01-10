@@ -64,21 +64,15 @@ class SignalClient(context: Context) {
 
     suspend fun generateLinkUri(): String = withContext(Dispatchers.Default) {
         val uuid = UUID.randomUUID().toString()
-        val publicKeyFull = identityKeyPair.publicKey.serialize()
-        
-        // Strip the 0x05 prefix if present to get the raw 32 bytes
-        val publicKeyRaw = if (publicKeyFull.size == 33 && publicKeyFull[0] == 0x05.toByte()) {
-            publicKeyFull.copyOfRange(1, 33)
-        } else {
-            publicKeyFull
-        }
+        val publicKey = identityKeyPair.publicKey.serialize()
         
         // Start listening for the provisioning message
         connectToProvisioningSocket(uuid)
         
-        // Use Standard Base64 encoding (NO_WRAP) without padding
+        // Signal expects the full 33-byte key (with 0x05 prefix)
+        // Encoded as standard Base64, NO_WRAP, NO_PADDING
         val pubKeyBase64 = android.util.Base64.encodeToString(
-            publicKeyRaw,
+            publicKey,
             android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
         )
         
