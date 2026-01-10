@@ -11,7 +11,6 @@ import okhttp3.Request
 import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 import okio.ByteString
-/*
 import org.signal.libsignal.protocol.IdentityKey
 import org.signal.libsignal.protocol.IdentityKeyPair
 import org.signal.libsignal.protocol.SignalProtocolAddress
@@ -22,7 +21,6 @@ import org.signal.libsignal.protocol.kdf.HKDF
 import org.signal.libsignal.protocol.state.PreKeyRecord
 import org.signal.libsignal.protocol.state.SignedPreKeyRecord
 import org.signal.libsignal.protocol.util.KeyHelper
-*/
 import java.util.UUID
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -33,18 +31,15 @@ class SignalClient(context: Context) {
     private var webSocket: WebSocket? = null
     
     // In a real app, these keys should be securely stored
-    /*
     private val identityKeyPair: IdentityKeyPair
     private val registrationId: Int
     private val preKeys: List<PreKeyRecord>
     private val signedPreKey: SignedPreKeyRecord
-    */
     
     // The Store that holds all our session state
     private val protocolStore: SignalProtocolStoreImpl
 
     init {
-        /*
         // Using Curve directly if KeyHelper is missing methods in this version
         val identityKey = Curve.generateKeyPair()
         identityKeyPair = IdentityKeyPair(IdentityKey(identityKey.publicKey), identityKey.privateKey)
@@ -64,23 +59,18 @@ class SignalClient(context: Context) {
         val signedPreKeyPair = Curve.generateKeyPair()
         val signature = Curve.calculateSignature(identityKeyPair.privateKey, signedPreKeyPair.publicKey.serialize())
         signedPreKey = SignedPreKeyRecord(signedPreKeyId, System.currentTimeMillis(), signedPreKeyPair, signature)
-        */
         
         // Initialize the store
-        // protocolStore = SignalProtocolStoreImpl(context, identityKeyPair, registrationId)
-        protocolStore = SignalProtocolStoreImpl()
+        protocolStore = SignalProtocolStoreImpl(context, identityKeyPair, registrationId)
         
-        /*
         // Pre-populate the store with our generated keys
         preKeys.forEach { protocolStore.storePreKey(it.id, it) }
         protocolStore.storeSignedPreKey(signedPreKey.id, signedPreKey)
-        */
     }
 
     suspend fun generateLinkUri(): String = withContext(Dispatchers.Default) {
         val uuid = UUID.randomUUID().toString()
-        // val publicKey = identityKeyPair.publicKey.serialize()
-        val publicKey = "mock-public-key".toByteArray()
+        val publicKey = identityKeyPair.publicKey.serialize()
         
         // This is a simplified URI format. The actual Signal URI format might differ.
         // It typically includes the UUID and the public key.
@@ -127,7 +117,6 @@ class SignalClient(context: Context) {
     
     private fun handleProvisioningMessage(message: ProvisioningMessage) {
         try {
-            /*
             // 1. Decode the phone's ephemeral public key
             val theirPublicKey = Curve.decodePoint(message.publicKey, 0)
             
@@ -157,7 +146,6 @@ class SignalClient(context: Context) {
             val decryptedBody = cipher.doFinal(message.body)
             
             Log.d("SignalClient", "Decryption Successful! Body size: ${decryptedBody.size}")
-            */
             
             // 5. Parse the decrypted body (Master Key, Profile Key, etc.)
             // In a full implementation, we would now:
@@ -172,7 +160,6 @@ class SignalClient(context: Context) {
 
     suspend fun sendMessage(recipientId: String, messageText: String) = withContext(Dispatchers.IO) {
         try {
-            /*
             val address = SignalProtocolAddress(recipientId, 1) // Assuming device ID 1 for recipient
             val sessionCipher = SessionCipher(protocolStore, address)
             
@@ -184,7 +171,7 @@ class SignalClient(context: Context) {
             // For this prototype, we'll just log it.
             
             Log.d("SignalClient", "Message Encrypted for $recipientId: Type=${ciphertext.type}, Length=${ciphertext.serialize().size}")
-            */
+
             // Simulate sending over network
             // webSocket?.send(...)
             
