@@ -57,11 +57,10 @@ android {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
-            // Exclude all native libs from the AAR, we provide our own
             excludes += "lib/arm64-v8a/**"
             excludes += "lib/x86_64/**"
             excludes += "lib/x86/**"
-            excludes += "lib/armeabi-v7a/**" 
+            pickFirsts += "lib/armeabi-v7a/libsignal_jni.so"
         }
     }
 }
@@ -114,7 +113,7 @@ protobuf {
         all().forEach { task ->
             task.builtins {
                 create("java") {
-                    option("lite")
+                    // option("lite") // Removed to use full runtime
                 }
             }
         }

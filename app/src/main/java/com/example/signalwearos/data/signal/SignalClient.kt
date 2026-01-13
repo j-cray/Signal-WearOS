@@ -24,7 +24,8 @@ import org.signal.libsignal.protocol.util.KeyHelper
 import org.whispersystems.signalservice.internal.push.SignalServiceProtos
 import java.util.UUID
 import javax.crypto.Cipher
-import javax.crypto.spec.GCMParameterSpec
+import javax.crypto.Mac
+import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
 class SignalClient(context: Context) {
@@ -82,8 +83,7 @@ class SignalClient(context: Context) {
             android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
         )
         
-        // Correct Scheme: sgnl://linkdevice
-        val uri = "sgnl://linkdevice?uuid=$uuid&pub_key=$pubKeyBase64"
+        val uri = "sgnl://linkdevice/?uuid=$uuid&pub_key=$pubKeyBase64"
         Log.d("SignalClient", "Generated Link URI: $uri")
         uri
     }
@@ -99,7 +99,7 @@ class SignalClient(context: Context) {
                     val request = message.request
                     if (request.verb == "PUT" && request.path == "/v1/addressing/device") {
                         // This is the provisioning message!
-                        val body = request.body.toByteArray()
+                        val body: ByteArray = request.body.toByteArray()
                         try {
                             val provisioningMessage = ProvisioningMessage.parseFrom(body)
                             handleProvisioningMessage(provisioningMessage)
@@ -114,30 +114,61 @@ class SignalClient(context: Context) {
     
     private fun handleProvisioningMessage(message: ProvisioningMessage) {
         try {
-            val theirPublicKey = Curve.decodePoint(message.publicKey, 0)
+            // Use getters to avoid property access issues
+            val publicKeyBytes = message.getPublicKey().toByteArray()
+            val theirPublicKey = Curve.decodePoint(publicKeyBytes, 0)
+            
             val sharedSecret = Curve.calculateAgreement(theirPublicKey, identityKeyPair.privateKey)
             
-            // Manual HKDF (simplified for prototype)
-            val derivedSecrets = ByteArray(64) 
-            for (i in 0 until 64) {
-                derivedSecrets[i] = ((sharedSecret[i % sharedSecret.size].toInt() xor i).toByte())
-            }
+            // Correct HKDF derivation
+            val info = "TextSecure Provisioning Message".toByteArray()
+            val derivedSecrets = HKDF.deriveSecrets(sharedSecret, info, 64)
             
             val aesKey = ByteArray(32)
-            val iv = ByteArray(12)
+            val macKey = ByteArray(32)
             System.arraycopy(derivedSecrets, 0, aesKey, 0, 32)
-            System.arraycopy(derivedSecrets, 32, iv, 0, 12)
+            System.arraycopy(derivedSecrets, 32, macKey, 0, 32)
 
-            val cipher = Cipher.getInstance("AES/GCM/NoPadding")
-            val keySpec = SecretKeySpec(aesKey, "AES")
-            val gcmSpec = GCMParameterSpec(128, iv)
+            // Parse Body Structure: Version(1) + IV(16) + Ciphertext(...) + MAC(32)
+            val body: ByteArray = message.getBody().toByteArray()
+
+            if (body.size < 1 + 16 + 32) {
+                Log.e("SignalClient", "Body too short")
+                return
+            }
+
+            val version = body[0]
+            if (version != 0x01.toByte()) {
+                Log.e("SignalClient", "Invalid version: $version")
+                return
+            }
+
+            val macOffset = body.size - 32
+            val receivedMac = body.copyOfRange(macOffset, body.size)
+            val ivAndCiphertext = body.copyOfRange(1, macOffset)
             
-            cipher.init(Cipher.DECRYPT_MODE, keySpec, gcmSpec)
-            val decryptedBody = cipher.doFinal(message.body)
+            // Verify MAC
+            val mac = Mac.getInstance("HmacSHA256")
+            mac.init(SecretKeySpec(macKey, "HmacSHA256"))
+            mac.update(body, 0, macOffset) // Version + IV + Ciphertext
+            val calculatedMac = mac.doFinal()
             
-            Log.d("SignalClient", "Decryption Successful! Body size: ${decryptedBody.size}")
+            if (!java.util.Arrays.equals(receivedMac, calculatedMac)) {
+                Log.e("SignalClient", "MAC verification failed")
+                return
+            }
+
+            // Decrypt
+            val iv = ivAndCiphertext.copyOfRange(0, 16)
+            val ciphertext = ivAndCiphertext.copyOfRange(16, ivAndCiphertext.size)
             
-            // TODO: Parse the decrypted body to get the Master Key and Auth Token
+            val cipher = Cipher.getInstance("AES/CBC/PKCS5Padding")
+            cipher.init(Cipher.DECRYPT_MODE, SecretKeySpec(aesKey, "AES"), IvParameterSpec(iv))
+            val plaintext = cipher.doFinal(ciphertext)
+            
+            Log.d("SignalClient", "Decryption Successful! Plaintext size: ${plaintext.size}")
+            
+            // TODO: Parse the plaintext (ProvisionMessage) to get the Master Key
             
         } catch (e: Exception) {
             Log.e("SignalClient", "Decryption failed", e)
