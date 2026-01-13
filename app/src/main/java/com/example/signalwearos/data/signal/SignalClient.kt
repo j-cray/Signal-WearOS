@@ -67,19 +67,10 @@ class SignalClient(context: Context) {
         val uuid = UUID.randomUUID().toString()
         val publicKeyFull = identityKeyPair.publicKey.serialize()
         
-        // Strip the 0x05 prefix if present to get the raw 32 bytes
-        val publicKeyRaw = if (publicKeyFull.size == 33 && publicKeyFull[0] == 0x05.toByte()) {
-            publicKeyFull.copyOfRange(1, 33)
-        } else {
-            publicKeyFull
-        }
-        
-        // Start listening for the provisioning message
-        connectToProvisioningSocket(uuid)
-        
+        // Use the full key (with 0x05 prefix)
         // Use URL_SAFE encoding, NO_WRAP, NO_PADDING
         val pubKeyBase64 = android.util.Base64.encodeToString(
-            publicKeyRaw, 
+            publicKeyFull, 
             android.util.Base64.URL_SAFE or android.util.Base64.NO_WRAP or android.util.Base64.NO_PADDING
         )
         
@@ -101,7 +92,7 @@ class SignalClient(context: Context) {
                         // This is the provisioning message!
                         val body: ByteArray = request.body.toByteArray()
                         try {
-                            val provisioningMessage = ProvisioningMessage.parseFrom(body)
+                            val provisioningMessage = SignalServiceProtos.ProvisioningMessage.parseFrom(body)
                             handleProvisioningMessage(provisioningMessage)
                         } catch (e: Exception) {
                             Log.e("SignalClient", "Failed to parse provisioning message", e)
@@ -112,7 +103,7 @@ class SignalClient(context: Context) {
         }
     }
     
-    private fun handleProvisioningMessage(message: ProvisioningMessage) {
+    private fun handleProvisioningMessage(message: SignalServiceProtos.ProvisioningMessage) {
         try {
             // Use getters to avoid property access issues
             val publicKeyBytes = message.getPublicKey().toByteArray()
