@@ -3,6 +3,7 @@ import com.google.protobuf.gradle.id
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.protobuf)
 }
@@ -41,29 +42,26 @@ android {
         }
     }
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
         isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "21"
     }
-    // useLibrary("wear-sdk")
     buildFeatures {
         compose = true
-    }
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
     }
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
         }
         jniLibs {
+            // Exclude all native libs from the AAR, we provide our own
             excludes += "lib/arm64-v8a/**"
             excludes += "lib/x86_64/**"
             excludes += "lib/x86/**"
-            pickFirsts += "lib/armeabi-v7a/libsignal_jni.so"
+            excludes += "lib/armeabi-v7a/**" 
         }
     }
 }
@@ -89,7 +87,7 @@ dependencies {
     implementation(libs.compose.navigation)
     implementation(libs.zxing.core)
     
-    // Use Maven dependency for Java classes (handles transitive deps)
+    // Use Maven for Java, but local .so for native
     implementation(libs.libsignal.client)
 
     implementation(libs.okhttp)
@@ -115,7 +113,7 @@ protobuf {
     generateProtoTasks {
         all().forEach { task ->
             task.builtins {
-                id("java") {
+                create("java") {
                     option("lite")
                 }
             }
