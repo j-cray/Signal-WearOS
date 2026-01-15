@@ -87,6 +87,8 @@ The handshake between phone and watch follows the Signal Protocol device linking
 ./gradlew test
 ```
 
+**Note:** If you encounter build issues (especially with plugin resolution), see [BUILD_TROUBLESHOOTING.md](BUILD_TROUBLESHOOTING.md) for solutions.
+
 ### Installation
 
 ```bash
