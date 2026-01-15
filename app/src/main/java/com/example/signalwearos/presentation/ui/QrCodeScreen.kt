@@ -29,19 +29,18 @@ import kotlinx.coroutines.withContext
 fun QrCodeScreen(
     onLinked: () -> Unit
 ) {
-    val signalClient = remember { SignalClient() }
+    val signalClient = remember { SignalClient(onProvisioningComplete = onLinked) }
     var qrBitmap by remember { mutableStateOf<Bitmap?>(null) }
 
     LaunchedEffect(Unit) {
         val linkUri = signalClient.generateLinkUri()
         qrBitmap = generateQrCode(linkUri)
         
-        // In a real implementation, we would start listening on the WebSocket here
-        // signalClient.connectToWebSocket(uuid)
+        // Extract UUID from the link URI for WebSocket connection
+        val uuid = linkUri.substringAfter("uuid=").substringBefore("&")
         
-        // Simulate linking for now as we don't have a real Signal server to talk to
-        // delay(10000)
-        // onLinked()
+        // Connect to WebSocket to listen for provisioning message
+        signalClient.connectToWebSocket(uuid)
     }
 
     Box(

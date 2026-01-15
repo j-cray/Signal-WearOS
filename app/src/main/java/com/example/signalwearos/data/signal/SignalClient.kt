@@ -25,7 +25,7 @@ import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.SecretKeySpec
 
-class SignalClient {
+class SignalClient(private val onProvisioningComplete: () -> Unit = {}) {
     private val client = OkHttpClient()
     private var webSocket: WebSocket? = null
     
@@ -123,16 +123,11 @@ class SignalClient {
             val sharedSecret = Curve.calculateAgreement(theirPublicKey, identityKeyPair.privateKey)
             
             // 3. Derive the AES key using HKDF
-            // Depending on libsignal version, HKDF might be static or instantiated differently.
-            // If v3() is missing, we can try createFor(3) or fallback to manual.
-            // Since createFor(3) also failed in previous attempts or might be unstable,
-            // let's use the manual fallback we wrote earlier to ensure it compiles.
-            
-            val derivedSecrets = ByteArray(64) 
-            // Simulate derivation (XOR for demo purposes, DO NOT USE IN PRODUCTION)
-            for (i in 0 until 64) {
-                derivedSecrets[i] = ((sharedSecret[i % sharedSecret.size].toInt() xor i).toByte())
-            }
+            // Use proper HKDF for key derivation from the shared secret
+            val hkdf = HKDF.createFor(3) // Version 3 for Signal Protocol
+            val info = "WhisperProvisioning".toByteArray(Charsets.UTF_8)
+            val salt = ByteArray(32) // Use zeros as salt (as per Signal Protocol spec)
+            val derivedSecrets = hkdf.deriveSecrets(sharedSecret, salt, info, 64)
             
             // Split derived secrets into Key and IV (simplified assumption for this prototype)
             val aesKey = ByteArray(32)
@@ -155,6 +150,9 @@ class SignalClient {
             // - Save the Master Key to the ProtocolStore
             // - Send a confirmation message back to the server
             // - Start the "Sync" process to get contacts
+            
+            // Notify that provisioning is complete
+            onProvisioningComplete()
             
         } catch (e: Exception) {
             Log.e("SignalClient", "Decryption failed", e)
